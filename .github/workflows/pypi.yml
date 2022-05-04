@@ -17,7 +17,7 @@ jobs:
         run: >-
           pip install --upgrade setuptools setuptools_scm wheel twine
           export GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          echo "GIT_HASH=$GIT_HASH"
+          echo "GIT_HASH: $GIT_HASH"
           sed -i "" "s/__VERSION_HERE__/$GITHASH/g" setup.py
           cat setup.py
           python setup.py sdist bdist_wheel
