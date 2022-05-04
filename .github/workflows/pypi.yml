@@ -8,6 +8,7 @@ jobs:
     
     steps:
       - uses: actions/checkout@master
+      
       - name: Set up Python 3.9
         uses: actions/setup-python@v1
         with:
@@ -15,10 +16,10 @@ jobs:
 
       - name: Build
         run: |
-          pip install --upgrade setuptools setuptools_scm wheel twine
-          export GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          echo "GIT_HASH: $GIT_HASH"
-          sed -i "s/__VERSION_HERE__/$GIT_HASH/g" setup.py
+          pip install --upgrade dunamai setuptools setuptools_scm wheel twine
+          export VERSION_NUMBER=$(dunamai from any)
+          echo "VERSION_NUMBER: $VERSION_NUMBER"
+          sed -i "s/__VERSION_HERE__/$VERSION_NUMBER/g" setup.py
           cat setup.py
           python setup.py sdist bdist_wheel
           
