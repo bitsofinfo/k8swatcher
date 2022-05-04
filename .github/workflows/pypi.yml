@@ -25,8 +25,9 @@ jobs:
       - name: Upload to test
         env:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: >-
-          twine upload -r testpypi dist/*
+          TWINE_USERNAME: bitsofinfo
+        run: 
+          twine upload --non-interactive -r testpypi dist/* 
 
       #- name: Publish distribution 📦 to Test PyPI
       #  uses: pypa/gh-action-pypi-publish@master
