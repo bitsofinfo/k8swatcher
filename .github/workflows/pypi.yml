@@ -14,7 +14,7 @@ jobs:
           python-version: 3.9
 
       - name: Build
-        run: >-
+        run: |
           pip install --upgrade setuptools setuptools_scm wheel twine
           export GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
           echo "GIT_HASH: $GIT_HASH"
