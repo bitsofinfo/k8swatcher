@@ -1,6 +1,6 @@
 # k8swatcher <!-- omit in toc -->
 
-[![Build Status](https://travis-ci.org/bitsofinfo/k8swatcher.svg?branch=master)](https://travis-ci.org/bitsofinfo/k8swatcher) [![PyPI version](https://badge.fury.io/py/k8swatcher.svg)](https://badge.fury.io/py/k8swatcher) 
+![GitHub Actions status](https://github.com/bitsofinfo/k8swatcher/actions/workflows/pypi.yml/badge.svg) [![PyPI version](https://badge.fury.io/py/k8swatcher.svg)](https://badge.fury.io/py/k8swatcher) 
 
 Python module that simplifies watching anything on a kubernetes cluster. You can utilize this module in your own python application to implement the typical *"list then watch"* functionality as described in the "[Efficient detection of changes](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)" section of the kubernetes API documentation.
 
