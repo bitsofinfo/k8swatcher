@@ -25,7 +25,7 @@ jobs:
       - name: Upload to test
         env:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          TWINE_USERNAME: bitsofinfo
+          TWINE_USERNAME: __token__
         run: 
           twine upload --non-interactive -r testpypi dist/* 
 
