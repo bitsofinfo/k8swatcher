@@ -7,20 +7,20 @@ Python module that simplifies watching anything on a kubernetes cluster. You can
 - [using in your python code](#using-in-your-python-code)
 - [run locally w/ the built in CLI](#run-locally-w-the-built-in-cli)
 
-# local dev
+## local dev
 
 ```
 python3 -m venv k8swatcher.ve
 source k8swatcher.ve/bin/activate
 pip install -r requirements-dev.txt
 ```
-# build local wheel
+## build local wheel
 
 ```
 pip install .
 ```
 
-# using in your python code
+## using in your python code
 
 
 ```python
@@ -41,7 +41,7 @@ for event in k8s_watcher:
     print(json.dumps(event.dict(),default=str,indent=2))
     
 ```
-# run locally w/ the built in CLI
+## run locally w/ the built in CLI
 
 In addition to being able to utilize this module inline in your code, this module also includes a simple CLI you can use for testing.
 
@@ -92,7 +92,7 @@ Watch `Pod` objects in a specific namespace...
 ```
 k8swatcher \
     --k8s-kind Pod \
-    --k8s-namespace edg-apps \
+    --k8s-namespace my-apps \
     --k8s-sdk-class-name CoreV1Api \
     --k8s-sdk-list-function-name list_namespaced_pod \
     --include-k8s-objects
