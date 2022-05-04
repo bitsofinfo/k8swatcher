@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="k8swatcher",
-    version="TRAVISTAGHERE",
+    version="__VERSION_HERE__",
     author="bitsofinfo",
     author_email="bitsofinfo.g@gmail.com",
     description="Library for watching kubernetes events",
