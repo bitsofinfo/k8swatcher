@@ -8,6 +8,7 @@ Python module that simplifies watching anything on a kubernetes cluster. You can
 - [run locally w/ the built in CLI](#run-locally-w-the-built-in-cli)
 - [example CLI output](#example-cli-output)
 - [local dev](#local-dev)
+- [todo](#todo)
 
 ## Using in your python code
 
@@ -249,3 +250,7 @@ python3 -m venv k8swatcher.ve
 source k8swatcher.ve/bin/activate
 pip install -r requirements-dev.txt
 ```
+
+## todo
+
+a few tests, using `kind` etc
