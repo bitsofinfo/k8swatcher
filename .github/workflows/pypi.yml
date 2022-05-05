@@ -17,7 +17,7 @@ jobs:
       - name: Build
         run: |
           pip install --upgrade dunamai setuptools setuptools_scm wheel twine
-          export VERSION_NUMBER=$(dunamai from git --format 0.0.0.{commit})
+          export VERSION_NUMBER=$(dunamai from git 0.0.0.{timestamp})
           echo "VERSION_NUMBER: $VERSION_NUMBER"
           sed -i "s/__VERSION_HERE__/$VERSION_NUMBER/g" setup.py
           cat setup.py
