@@ -2,29 +2,22 @@
 
 ![GitHub Actions status](https://github.com/bitsofinfo/k8swatcher/actions/workflows/pypi.yml/badge.svg) [![PyPI version](https://badge.fury.io/py/k8swatcher.svg)](https://badge.fury.io/py/k8swatcher) 
 
-Python module that simplifies watching anything on a kubernetes cluster. You can utilize this module in your own python application to implement the typical *"list then watch"* functionality as described in the "[Efficient detection of changes](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)" section of the kubernetes API documentation.
+Python module that simplifies watching anything on a kubernetes cluster. You can utilize this module in your own python application to fulfill the typical *"list then watch"* functionality as described in the "[Efficient detection of changes](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)" section of the kubernetes API documentation. (without having to write that code yourself!)
 
-- [local dev](#local-dev)
-- [build local wheel](#build-local-wheel)
-- [using in your python code](#using-in-your-python-code)
+- [Using in your python code](#using-in-your-python-code)
 - [run locally w/ the built in CLI](#run-locally-w-the-built-in-cli)
 - [example CLI output](#example-cli-output)
+- [local dev](#local-dev)
 
-## local dev
-
-```
-python3 -m venv k8swatcher.ve
-source k8swatcher.ve/bin/activate
-pip install -r requirements-dev.txt
-```
-## build local wheel
+## Using in your python code
 
 ```
-pip install .
+pip install k8swatcher
 ```
 
-## using in your python code
+For each type of kubernetes object you want to watch... wire up a separate `K8sWatcher` then call its `watcher()` method which returns a long-lived `Generator` that returns `K8sWatchEvent` objects as things happen.
 
+A typical usage pattern would be to wire up separate `Threads`, one per thing you wish to watch, bind to `Queues` etc and then go from there...
 
 ```python
 import json
@@ -36,7 +29,8 @@ watch_config = K8sWatchConfig(**{ \
                     "sdk_client_class_name": "CoreV1Api", \
                     "sdk_list_function_name": "list_namespaced_pod", \
                     "field_selector": None, \
-                    "label_selector": "mylabel=x,myotherlabel=y"
+                    "label_selector": "mylabel=x,myotherlabel=y",
+                    "include_k8s_objects": True
                 })
 
 k8s_watcher = K8sWatcher(watch_config).watcher()
@@ -119,7 +113,21 @@ Again the CLI is just for testing/demo purposes. The object emitted to STDOUT is
     "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
     "resource_version": "24692787",
     "namespace": "my-apps",
-    "k8s_object": null
+    "k8s_object": {
+      "metadata": {
+        "creationTimestamp": "2022-05-04T14:22:21+00:00",
+        "generateName": "csi-azurefile-node-",
+        "labels": {
+          "app": "csi-azurefile-node",
+          "controller-revision-hash": "56dd69698c",
+          "pod-template-generation": "8"
+        },
+        "managedFields": [
+            ...
+        ]
+        ...
+      }
+    }
   }
 }
 2022-05-05 06:56:21,319 - K8sWatcher - DEBUG - __iter__() processing K8sWatchConfig[kind=Pod]
@@ -134,7 +142,21 @@ Again the CLI is just for testing/demo purposes. The object emitted to STDOUT is
     "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
     "resource_version": "24891472",
     "namespace": "my-apps",
-    "k8s_object": null
+    "k8s_object": {
+      "metadata": {
+        "creationTimestamp": "2022-05-04T14:22:21+00:00",
+        "generateName": "csi-azurefile-node-",
+        "labels": {
+          "app": "csi-azurefile-node",
+          "controller-revision-hash": "56dd69698c",
+          "pod-template-generation": "8"
+        },
+        "managedFields": [
+            ...
+        ]
+        ...
+      }
+    }
   }
 }
 {
@@ -147,7 +169,21 @@ Again the CLI is just for testing/demo purposes. The object emitted to STDOUT is
     "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
     "resource_version": "24891481",
     "namespace": "my-apps",
-    "k8s_object": null
+    "k8s_object": {
+      "metadata": {
+        "creationTimestamp": "2022-05-04T14:22:21+00:00",
+        "generateName": "csi-azurefile-node-",
+        "labels": {
+          "app": "csi-azurefile-node",
+          "controller-revision-hash": "56dd69698c",
+          "pod-template-generation": "8"
+        },
+        "managedFields": [
+            ...
+        ]
+        ...
+      }
+    }
   }
 }
 {
@@ -160,7 +196,21 @@ Again the CLI is just for testing/demo purposes. The object emitted to STDOUT is
     "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
     "resource_version": "24891521",
     "namespace": "my-apps",
-    "k8s_object": null
+    "k8s_object": {
+      "metadata": {
+        "creationTimestamp": "2022-05-04T14:22:21+00:00",
+        "generateName": "csi-azurefile-node-",
+        "labels": {
+          "app": "csi-azurefile-node",
+          "controller-revision-hash": "56dd69698c",
+          "pod-template-generation": "8"
+        },
+        "managedFields": [
+            ...
+        ]
+        ...
+      }
+    }
   }
 }
 {
@@ -173,7 +223,29 @@ Again the CLI is just for testing/demo purposes. The object emitted to STDOUT is
     "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
     "resource_version": "24891522",
     "namespace": "my-apps",
-    "k8s_object": null
+    "k8s_object": {
+      "metadata": {
+        "creationTimestamp": "2022-05-04T14:22:21+00:00",
+        "generateName": "csi-azurefile-node-",
+        "labels": {
+          "app": "csi-azurefile-node",
+          "controller-revision-hash": "56dd69698c",
+          "pod-template-generation": "8"
+        },
+        "managedFields": [
+            ...
+        ]
+        ...
+      }
+    }
   }
 }
+```
+
+## local dev
+
+```
+python3 -m venv k8swatcher.ve
+source k8swatcher.ve/bin/activate
+pip install -r requirements-dev.txt
 ```
