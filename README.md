@@ -8,6 +8,7 @@ Python module that simplifies watching anything on a kubernetes cluster. You can
 - [build local wheel](#build-local-wheel)
 - [using in your python code](#using-in-your-python-code)
 - [run locally w/ the built in CLI](#run-locally-w-the-built-in-cli)
+- [example CLI output](#example-cli-output)
 
 ## local dev
 
@@ -26,11 +27,12 @@ pip install .
 
 
 ```python
+import json
 from k8swatcher import K8sWatchConfig, K8sWatcher
 
 watch_config = K8sWatchConfig(**{ \
                     "namespace": "my-namespace", \
-                    "kind": "pod", \
+                    "kind": "Pod", \
                     "sdk_client_class_name": "CoreV1Api", \
                     "sdk_list_function_name": "list_namespaced_pod", \
                     "field_selector": None, \
@@ -98,4 +100,80 @@ k8swatcher \
     --k8s-sdk-class-name CoreV1Api \
     --k8s-sdk-list-function-name list_namespaced_pod \
     --include-k8s-objects
+```
+
+## example CLI output
+
+Again the CLI is just for testing/demo purposes. The object emitted to STDOUT is the object you can utilize in your code when leveraging this module.
+
+```
+2022-05-05 06:56:19,587 - K8sWatcher - DEBUG - __iter__() processing K8sWatchConfig[kind=Pod]
+2022-05-05 06:56:19,587 - K8sWatcher - DEBUG - handle_k8s_object_list() processing K8sWatchConfig[kind=Pod]
+{
+  "event_type": "LOADED",
+  "resource_version": "24891356",
+  "k8s_tracked_object": {
+    "uid": "dc1321ba-4b4c-47a9-9d85-7b8a8d0ef2af",
+    "kind": "Pod",
+    "api_version": "v1",
+    "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
+    "resource_version": "24692787",
+    "namespace": "my-apps",
+    "k8s_object": null
+  }
+}
+2022-05-05 06:56:21,319 - K8sWatcher - DEBUG - __iter__() processing K8sWatchConfig[kind=Pod]
+2022-05-05 06:56:21,319 - K8sWatcher - DEBUG - handle_k8s_object_watch() processing K8sWatchConfig[kind=Pod]
+{
+  "event_type": "MODIFIED",
+  "resource_version": "24891472",
+  "k8s_tracked_object": {
+    "uid": "dc1321ba-4b4c-47a9-9d85-7b8a8d0ef2af",
+    "kind": "Pod",
+    "api_version": "v1",
+    "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
+    "resource_version": "24891472",
+    "namespace": "my-apps",
+    "k8s_object": null
+  }
+}
+{
+  "event_type": "MODIFIED",
+  "resource_version": "24891481",
+  "k8s_tracked_object": {
+    "uid": "dc1321ba-4b4c-47a9-9d85-7b8a8d0ef2af",
+    "kind": "Pod",
+    "api_version": "v1",
+    "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
+    "resource_version": "24891481",
+    "namespace": "my-apps",
+    "k8s_object": null
+  }
+}
+{
+  "event_type": "MODIFIED",
+  "resource_version": "24891521",
+  "k8s_tracked_object": {
+    "uid": "dc1321ba-4b4c-47a9-9d85-7b8a8d0ef2af",
+    "kind": "Pod",
+    "api_version": "v1",
+    "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
+    "resource_version": "24891521",
+    "namespace": "my-apps",
+    "k8s_object": null
+  }
+}
+{
+  "event_type": "DELETED",
+  "resource_version": "24891522",
+  "k8s_tracked_object": {
+    "uid": "dc1321ba-4b4c-47a9-9d85-7b8a8d0ef2af",
+    "kind": "Pod",
+    "api_version": "v1",
+    "name": "my-service-dev-0-0-3-886bf55d5-p7kpd",
+    "resource_version": "24891522",
+    "namespace": "my-apps",
+    "k8s_object": null
+  }
+}
 ```

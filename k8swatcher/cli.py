@@ -12,7 +12,7 @@ import os
 import json
 
 from .logging import LogService
-from .k8swatcher import K8sWatchConfig, K8sWatcher
+from . import K8sWatchConfig, K8sWatcher
 
 from typing import List
 

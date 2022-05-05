@@ -1,4 +1,5 @@
 *.ve
+piptest
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -121,6 +122,8 @@ venv.bak/
 
 # mkdocs documentation
 /site
+
+
 
 # mypy
 .mypy_cache/
