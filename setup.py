@@ -19,9 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'kubernetes',
-        'typer',
-        'pydantic'
+        'kubernetes>=23.3.0',
+        'typer>=0.4.1',
+        'pydantic>=1.9.0'
     ],
     entry_points = {
         "console_scripts": ['k8swatcher = k8swatcher.cli:main']
