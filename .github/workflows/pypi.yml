@@ -14,10 +14,21 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Build
+      - name: Dev build
+        if: startsWith(github.ref, 'refs/tags') == false
         run: |
           pip install --upgrade dunamai setuptools setuptools_scm wheel twine
           export VERSION_NUMBER=$(dunamai from git --format 0.0.0.{timestamp})
+          echo "VERSION_NUMBER: $VERSION_NUMBER"
+          sed -i "s/__VERSION_HERE__/$VERSION_NUMBER/g" setup.py
+          cat setup.py
+          python setup.py sdist bdist_wheel
+
+      - name: Tagged build
+        if: startsWith(github.ref, 'refs/tags') == true
+        run: |
+          pip install --upgrade dunamai setuptools setuptools_scm wheel twine
+          export VERSION_NUMBER=${{ github.ref_name }}
           echo "VERSION_NUMBER: $VERSION_NUMBER"
           sed -i "s/__VERSION_HERE__/$VERSION_NUMBER/g" setup.py
           cat setup.py
