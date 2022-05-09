@@ -4,13 +4,17 @@
 """
 """
 
-
+from abc import abstractmethod
+import asyncio
+from queue import Queue
+from threading import Thread
 from pydantic import BaseModel
 from typing import Generator, List, Optional, Dict, Any, Callable, Pattern
-
+from abc import ABC
 import enum
 from kubernetes import client, config, kubernetes
 import sys
+from random import randint
 
 from .logging import LogService
 
@@ -26,6 +30,7 @@ class K8sWatchEventType(str, enum.Enum):
         return self.name
 
 class K8sWatchConfig(BaseModel):
+    id:str
     suppress_bookmarks:bool = True
     include_k8s_objects:bool = False
     namespace: Optional[str]
@@ -204,3 +209,113 @@ class K8sWatcher:
             except Exception as e:
                 self.logger.exception(f"_iter_() unexpected error: {str(sys.exc_info()[:2])}")
 
+class K8sWatcherThread(Thread):
+    
+    def __init__(self, watch_event_queue:Queue, watch_config:K8sWatchConfig, *args, **kwargs):
+        kwargs.setdefault('daemon', True)
+        super().__init__(*args, **kwargs)
+        self.watcher = K8sWatcher(watch_config).watcher()
+        self.logger = LogService("K8sWatcherThread").logger
+        self.watch_event_queue = watch_event_queue
+        self.running = True
+
+    def stop_running(self):
+        self.running = False
+
+    def run(self):
+        try:
+            while self.running:
+                for k8s_watch_event in self.watcher:
+                    self.watch_event_queue.put_nowait(k8s_watch_event)
+            self.logger.debug("K8sWatcherThread.run() running=False, exiting...")
+        except: 
+            self.logger.exception(f"K8sWatcherThread().run() unexpected error: {str(sys.exc_info()[:2])}")
+        finally:
+            print("SHUTDOWN2")
+            pass
+
+class K8sEventHandler(ABC):
+ 
+    @abstractmethod
+    async def handle_k8s_watch_event(self, k8s_watch_event:K8sWatchEvent):
+        pass
+
+class K8sAsyncioConsumerThread(Thread):
+
+    def __init__(self, watch_event_queue:Queue, event_handler:K8sEventHandler, *args, **kwargs):
+        kwargs.setdefault('daemon', True)
+        super().__init__(*args, **kwargs)
+        self.logger = LogService("K8sAsyncioConsumerThread").logger
+        self.watch_event_queue = watch_event_queue
+        self.event_handler = event_handler
+        self.running = True
+
+    def stop_running(self):
+        self.running = False
+
+    async def consume_and_handle_watch_events(self):
+        while self.running:
+            try:
+                watch_event:K8sWatchEvent = self.watch_event_queue.get()
+                await self.event_handler.handle_k8s_watch_event(watch_event)
+            except: 
+                self.logger.exception(f"K8sAsyncioConsumerThread().run() unexpected error: {str(sys.exc_info()[:2])}")
+            finally:
+                pass
+        self.logger.debug("K8sAsyncioConsumerThread.consume_and_handle_watch_events() running=False, exiting...")
+
+    def run(self):
+        try:
+            asyncio.run(self.consume_and_handle_watch_events())
+        except:
+            print("SHUTDOWN")
+        
+class K8sWatcherService:
+
+    def __init__(self, ):
+        self.thread_map = {}
+        self.threaded_watch_unified_event_queue = None
+        self.logger = LogService("K8sWatcherService").logger
+
+
+    def shutdown(self):
+
+        # stop all in thread map
+        if self.thread_map:
+            for watch_id, watcher_thread in self.thread_map.items():
+                self.logger.debug(f"shutdown() stopping thread: watch_id:{watch_id}")
+                watcher_thread.stop_running()
+
+
+    
+
+    def queuing_watch(self, watch_config:K8sWatchConfig, unified_queue:bool = False) -> Queue:
+        
+        if unified_queue and not self.threaded_watch_unified_event_queue:
+            self.threaded_watch_unified_event_queue = Queue()
+            
+        queue_to_use = self.threaded_watch_unified_event_queue
+
+        if not queue_to_use:
+            queue_to_use:Queue = Queue()
+
+        thread = K8sWatcherThread(queue_to_use,watch_config)
+        self.thread_map[watch_config.id] = thread
+        thread.start()
+
+        return queue_to_use
+
+    def asyncio_watch(self, watch_configs:List[K8sWatchConfig], event_handler:K8sEventHandler):
+
+        event_queue:Queue = None
+        for wc in watch_configs:
+             event_queue = self.queuing_watch(wc,unified_queue=True)
+
+        asyncio_consumer_thread = K8sAsyncioConsumerThread(event_queue,event_handler)
+        self.thread_map["asyncio_consumer_thread"] = asyncio_consumer_thread
+        asyncio_consumer_thread.start()
+
+    def join(self):
+        for thread_id, thread in self.thread_map.items():
+            self.logger.debug(f"join() joining thread: thread_id:{thread_id}")
+            thread.join()

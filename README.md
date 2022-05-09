@@ -2,19 +2,29 @@
 
 ![GitHub Actions status](https://github.com/bitsofinfo/k8swatcher/actions/workflows/pypi.yml/badge.svg) [![PyPI version](https://badge.fury.io/py/k8swatcher.svg)](https://badge.fury.io/py/k8swatcher) 
 
-Python module that simplifies watching anything on a kubernetes cluster. You can utilize this module in your own python application to fulfill the typical *"list then watch"* functionality as described in the "[Efficient detection of changes](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)" section of the kubernetes API documentation. (without having to write that code yourself!)
+Python module that simplifies watching anything on a kubernetes cluster. You can utilize this module in your own python application to fulfill the typical *"list then watch"* functionality as described in the "[Efficient detection of changes](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)" section of the kubernetes API documentation. (without having to write that code yourself!). This module utilizes the [Python Kubernetes Client](https://github.com/kubernetes-client) under the covers. 
 
+- [Install](#install)
 - [Using in your python code](#using-in-your-python-code)
+  - [Direct](#direct)
+  - [Queuing via K8sWatcherService](#queuing-via-k8swatcherservice)
+  - [Asyncio via K8sWatcherService and a K8sEventHandler](#asyncio-via-k8swatcherservice-and-a-k8seventhandler)
 - [run locally w/ the built in CLI](#run-locally-w-the-built-in-cli)
 - [example CLI output](#example-cli-output)
 - [local dev](#local-dev)
 - [todo](#todo)
 
-## Using in your python code
+## Install
 
 ```
 pip install k8swatcher
 ```
+## Using in your python code
+
+There are a few different ways you can utilize this module in your code. Note that the underlying [Python Kubernetes Client](https://github.com/kubernetes-client) does not support asyncio, so in real-world applications, you generally will be dealing w/ python `Threads` to handle events that come from the underlying library. The `K8sWatcherService` provides some convienence methods for this.
+### Direct
+
+The direct mode gives you more control on how process each `K8sWatchEvent` that is `yielded` from the `K8sWatcher`. 
 
 For each type of kubernetes object you want to watch... wire up a separate `K8sWatcher` then call its `watcher()` method which returns a long-lived `Generator` that returns `K8sWatchEvent` objects as things happen.
 
@@ -22,7 +32,7 @@ A typical usage pattern would be to wire up separate `Threads`, one per thing yo
 
 ```python
 import json
-from k8swatcher import K8sWatchConfig, K8sWatcher
+from k8swatcher import K8sWatchConfig, K8sWatcher, K8sWatchEvent
 
 watch_config = K8sWatchConfig(**{ \
                     "namespace": "my-namespace", \
@@ -40,13 +50,119 @@ for event in k8s_watcher:
     print(json.dumps(event.dict(),default=str,indent=2))
     
 ```
+
+### Queuing via K8sWatcherService
+
+If you are not interested in writing your own consumer `Thread` code and would like each `K8sWatchEvent` to be delivered via python `Queues` you can use the `K8sWatcherService.queuing_watch(K8sWatchConfig, unified_queue=True|False)` method. Each time you call `queuing_watch`, `K8sWatcherService` creates a new `Thread` bound to a unique `K8sWatcher` instance to automatically capture all events emitted from it. Each event will be placed on a `Queue` that is returned to you. If you pass `unified_queue=True`, the same `Queue` instance will be returned for every call to `queuing_watch()` so you only have to monitor a single `Queue` that will contains different `K8sWatchEvents` across all the different `K8sWatchConfigs` you define.
+
+```python
+import json
+from k8swatcher import K8sWatchConfig, K8sWatchService, K8sWatchEvent
+from threading import Thread
+
+class MyConsumerThread(Thread):
+
+    def __init__(self, event_queue_to_monitor, *args, **kwargs):
+        kwargs.setdefault('daemon', True)
+        super().__init__(*args, **kwargs)
+
+    def run(self):
+        while True:
+            watch_event:K8sWatchEvent = self.watch_event_queue.get()
+            print(json.dumps(watch_event.dict(),default=str,indent=2))
+
+pod_watch_config = K8sWatchConfig(**{ \
+                    "id": k8s_kind,
+                    "namespace": k8s_namespace, \
+                    "kind": "Pod", \
+                  ...})
+
+ingress_watch_config = K8sWatchConfig(**{ \
+                    "id": k8s_kind,
+                    "namespace": k8s_namespace, \
+                    "kind": "Ingress", \
+                  ...})
+
+watch_service = K8sWatcherService()
+
+"""
+With `unified_queue=False` (the default):
+
+... each distinct call to queuing_watch() returns
+a dedicated Queue per K8sWatchConfig
+"""
+pod_event_queue:Queue = watch_service.queuing_watch(pod_watch_config)
+ingress_event_queue:Queue = watch_service.queuing_watch(ingress_watch_config)
+
+pod_consumer = MyConsumerThread(pod_event_queue)
+pod_consumer.start()
+
+ingress_consumer = MyConsumerThread(ingress_event_queue)
+ingress_consumer.start()
+
+pod_consumer.join()
+ingress_consuner.join()
+watch_service.join()
+
+
+"""
+However with `unified_queue=True`:
+
+... each distinct call to queuing_watch() returns
+a the same Queue that will get events for all K8sWatchConfigs 
+"""
+global_event_queue:Queue = watch_service.queuing_watch(pod_watch_config,unified_queue=True)
+watch_service.queuing_watch(ingress_watch_config,unified_queue=True)
+
+all_events_consumer = MyConsumerThread(global_event_queue)
+all_events_consumer.start()
+all_events_consumer.join()
+
+watch_service.join()
+...
+
+```
+
+### Asyncio via K8sWatcherService and a K8sEventHandler
+
+If you don't want to manage any `Threads` at all, you can utilize the `K8sEventHandler` method. In this usage pattern you simply provide a class instance that implements the `K8sEventHandler` method `async def handle_k8s_watch_event(self, k8s_watch_event:K8sWatchEvent)` and your handler class will be called every time a new `K8sWatchEvent` is created. Internally `K8sWatcherService` manages a consumer thread automatically for you that captures all events and calls your `async` handler and then `awaits` it's finish.
+
+```python
+import json
+from k8swatcher import K8sWatchConfig, K8sWatchService, K8sWatchEvent
+
+class MyCustomHandler(K8sEventHandler):
+    async def handle_k8s_watch_event(self, k8s_watch_event:K8sWatchEvent):
+        watch_event:K8sWatchEvent = self.watch_event_queue.get()
+        print(json.dumps(watch_event.dict(),default=str,indent=2))
+        await doMyCustomStuff(k8s_watch_event)
+
+
+pod_watch_config = K8sWatchConfig(**{ \
+                    "id": k8s_kind,
+                    "namespace": k8s_namespace, \
+                    "kind": "Pod", \
+                  ...})
+
+ingress_watch_config = K8sWatchConfig(**{ \
+                    "id": k8s_kind,
+                    "namespace": k8s_namespace, \
+                    "kind": "Ingress", \
+                  ...})
+
+watch_service = K8sWatcherService()
+
+watch_service.asyncio_watch([pod_watch_config,ingress_watch_config],MyCustomHandler())
+
+watch_service.join()
+```
+
 ## run locally w/ the built in CLI
 
-In addition to being able to utilize this module inline in your code, this module also includes a simple CLI you can use for testing.
+In addition to being able to utilize this module inline in your code, this module also includes a simple CLI you can use for testing out the functionality. The CLI is not intended for any production use.
 
 ```
 $ k8swatcher --help
-
 Usage: k8swatcher [OPTIONS]
 
 Options:
@@ -68,6 +184,9 @@ Options:
                                   Include the full k8s object (as a dict) in
                                   each event  [default: no-
                                   include-k8s-objects]
+  --exec-mode [asyncio_watch|queuing_watch]
+                                  The preferred execution mode  [default:
+                                  ExecMode.queuing_watch]
   --install-completion [bash|zsh|fish|powershell|pwsh]
                                   Install completion for the specified shell.
   --show-completion [bash|zsh|fish|powershell|pwsh]
