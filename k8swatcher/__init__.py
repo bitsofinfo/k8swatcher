@@ -272,7 +272,7 @@ class K8sAsyncioConsumerThread(Thread):
         
 class K8sWatcherService:
 
-    def __init__(self, ):
+    def __init__(self):
         self.thread_map = {}
         self.threaded_watch_unified_event_queue = None
         self.logger = LogService("K8sWatcherService").logger
