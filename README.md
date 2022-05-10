@@ -6,6 +6,7 @@ Python module that simplifies watching anything on a kubernetes cluster. You can
 
 - [Install](#install)
 - [Using in your python code](#using-in-your-python-code)
+  - [kubernetes configuration](#kubernetes-configuration)
   - [Direct](#direct)
   - [Queuing via K8sWatcherService](#queuing-via-k8swatcherservice)
   - [Asyncio via K8sWatcherService and a K8sEventHandler](#asyncio-via-k8swatcherservice-and-a-k8seventhandler)
@@ -22,6 +23,11 @@ pip install k8swatcher
 ## Using in your python code
 
 There are a few different ways you can utilize this module in your code. Note that the underlying [Python Kubernetes Client](https://github.com/kubernetes-client) does not support asyncio, so in real-world applications, you generally will be dealing w/ python `Threads` to handle events that come from the underlying library. The `K8sWatcherService` provides some convienence methods for this.
+
+### kubernetes configuration
+
+Currently the module determines the kubernetes connection configuration via the `kubernetes.config.load_kube_config()` method which relies on the excuting processes's `~/.kube/config` current context
+
 ### Direct
 
 The direct mode gives you more control on how process each `K8sWatchEvent` that is `yielded` from the `K8sWatcher`. 
