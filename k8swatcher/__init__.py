@@ -59,11 +59,14 @@ class K8sWatchEvent(BaseModel):
 
 class K8sWatcher:
 
-    def __init__(self, k8s_watch_config:K8sWatchConfig):
+    def __init__(self, k8s_watch_config:K8sWatchConfig, \
+                       k8s_config_file_path:str=None, \
+                       k8s_config_context_name:str=None):
         
-        config.load_kube_config()
-
         self.logger = LogService("K8sWatcher").logger
+
+        self.logger.debug(f"K8sWatcher() loading kube config: k8s_config_file_path={k8s_config_file_path} k8s_config_context_name={k8s_config_context_name} (Note: 'None' = using defaults)")
+        config.load_kube_config(config_file=k8s_config_file_path, context=k8s_config_context_name)
 
         self.k8s_api_client = client.ApiClient()
         
@@ -211,10 +214,16 @@ class K8sWatcher:
 
 class K8sWatcherThread(Thread):
     
-    def __init__(self, watch_event_queue:Queue, watch_config:K8sWatchConfig, *args, **kwargs):
+    def __init__(self, watch_event_queue:Queue, \
+                       watch_config:K8sWatchConfig, \
+                       k8s_config_file_path:str=None, \
+                       k8s_config_context_name:str=None, \
+                       *args, \
+                       **kwargs):
+
         kwargs.setdefault('daemon', True)
         super().__init__(*args, **kwargs)
-        self.watcher = K8sWatcher(watch_config).watcher()
+        self.watcher = K8sWatcher(watch_config,k8s_config_file_path,k8s_config_context_name).watcher()
         self.logger = LogService("K8sWatcherThread").logger
         self.watch_event_queue = watch_event_queue
         self.running = True
@@ -272,11 +281,14 @@ class K8sAsyncioConsumerThread(Thread):
         
 class K8sWatcherService:
 
-    def __init__(self):
+    def __init__(self, k8s_config_file_path:str=None, \
+                       k8s_config_context_name:str=None):
         self.thread_map = {}
         self.threaded_watch_unified_event_queue = None
         self.logger = LogService("K8sWatcherService").logger
 
+        self.k8s_config_file_path = k8s_config_file_path
+        self.k8s_config_context_name = k8s_config_context_name
 
     def shutdown(self):
 
@@ -286,8 +298,6 @@ class K8sWatcherService:
                 self.logger.debug(f"shutdown() stopping thread: watch_id:{watch_id}")
                 watcher_thread.stop_running()
 
-
-    
 
     def queuing_watch(self, watch_config:K8sWatchConfig, unified_queue:bool = False) -> Queue:
         
@@ -299,7 +309,7 @@ class K8sWatcherService:
         if not queue_to_use:
             queue_to_use:Queue = Queue()
 
-        thread = K8sWatcherThread(queue_to_use,watch_config)
+        thread = K8sWatcherThread(queue_to_use,watch_config,self.k8s_config_file_path,self.k8s_config_context_name)
         self.thread_map[watch_config.id] = thread
         thread.start()
 

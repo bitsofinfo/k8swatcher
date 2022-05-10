@@ -26,8 +26,7 @@ There are a few different ways you can utilize this module in your code. Note th
 
 ### kubernetes configuration
 
-Currently the module determines the kubernetes connection configuration via the `kubernetes.config.load_kube_config()` method which relies on the excuting processes's `~/.kube/config` current context
-
+Currently the module determines the kubernetes connection configuration via the `kubernetes.config.load_kube_config()` method which relies on the excuting processes's `~/.kube/config` current context (by default), unless you specify a specific file/context to use via the `K8sWatcher` and `K8sWatcherService` constructors.
 ### Direct
 
 The direct mode gives you more control on how process each `K8sWatchEvent` that is `yielded` from the `K8sWatcher`. 
