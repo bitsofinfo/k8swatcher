@@ -66,7 +66,13 @@ class K8sWatcher:
         self.logger = LogService("K8sWatcher").logger
 
         self.logger.debug(f"K8sWatcher() loading kube config: k8s_config_file_path={k8s_config_file_path} k8s_config_context_name={k8s_config_context_name} (Note: 'None' = using defaults)")
-        config.load_kube_config(config_file=k8s_config_file_path, context=k8s_config_context_name)
+
+        try:
+            config.load_kube_config(config_file=k8s_config_file_path, context=k8s_config_context_name)
+        except Exception as e:
+            self.logger.debug(f"K8sWatcher() load_kube_config() failed, attempting load_incluster_config()....")
+            config.load_incluster_config()
+            self.logger.debug(f"K8sWatcher() load_incluster_config() OK!")
 
         self.k8s_api_client = client.ApiClient()
         
