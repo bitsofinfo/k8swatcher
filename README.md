@@ -13,6 +13,7 @@ Python module that simplifies watching anything on a kubernetes cluster. You can
 - [run locally w/ the built in CLI](#run-locally-w-the-built-in-cli)
 - [example CLI output](#example-cli-output)
 - [local dev](#local-dev)
+- [related projects](#related-projects)
 - [todo](#todo)
 
 ## Install
@@ -374,6 +375,10 @@ python3 -m venv k8swatcher.ve
 source k8swatcher.ve/bin/activate
 pip install -r requirements-dev.txt
 ```
+
+## related projects
+
+https://github.com/bitsofinfo/kubernetes-acme-dns-registrar
 
 ## todo
 
