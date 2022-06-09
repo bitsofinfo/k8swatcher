@@ -19,6 +19,12 @@ from random import randint
 from .logging import LogService
 
 __author__ = "bitsofinfo"
+
+
+class RestartRequiredException(Exception):
+    def __init__(self,message):
+        super().__init__(self.message)
+
 class K8sWatchEventType(str, enum.Enum):
     LOADED:str = "LOADED"
     ADDED:str = "ADDED"
@@ -200,8 +206,17 @@ class K8sWatcher:
 
                 except StopIteration as e:
                     break
+                except client.ApiException as e:
+                    if e.status == 410:
+                        msg = f"handle_k8s_object_watch() k8s client 410 ApiException, setting local resource_version=None, raising RestartRequiredException... : {str(sys.exc_info()[:2])}"
+                        self.logger.error(msg)
+                        self.resource_version = None
+                        raise RestartRequiredException(msg)
+                    else:
+                        raise e
                 except Exception as e:
                     self.logger.exception(f"handle_k8s_object_watch() unexpected error: {str(sys.exc_info()[:2])}")
+                    raise e
                 
 
     def __iter__(self) -> Generator[K8sWatchEvent,None,None]:
@@ -215,6 +230,11 @@ class K8sWatcher:
                     yield from self.handle_k8s_object_list(self.k8s_watch_config)
 
                 
+            except RestartRequiredException as e:
+                self.logger.warn(f"_iter_() caught RestartRequiredException, nullifying self.resource_version... : {e.message}")
+                self.resource_version = None
+                continue
+
             except Exception as e:
                 self.logger.exception(f"_iter_() unexpected error: {str(sys.exc_info()[:2])}")
 
