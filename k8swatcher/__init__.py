@@ -23,7 +23,8 @@ __author__ = "bitsofinfo"
 
 class RestartRequiredException(Exception):
     def __init__(self,message):
-        super().__init__(self.message)
+        super().__init__(message)
+        self.message = message
 
 class K8sWatchEventType(str, enum.Enum):
     LOADED:str = "LOADED"
